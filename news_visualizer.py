@@ -39,7 +39,11 @@ class NewsVisualizer:
                 value = re.sub(r'\b(P[ST]?)\b', '', value)
 
                 # Parse with dateutil (handles most edge cases)
-                return parser.parse(value)
+                dt = parser.parse(value)
+                # Check if date is within pandas Timestamp bounds
+                if dt < pd.Timestamp.min.to_pydatetime() or dt > pd.Timestamp.max.to_pydatetime():
+                    return pd.NaT
+                return dt
             except Exception:
                 return pd.NaT
             
