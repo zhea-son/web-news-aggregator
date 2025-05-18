@@ -1,16 +1,30 @@
-# Web News Aggregator App
+# Web News Aggregator
 
-This is a Web News Aggregator application that searches news categories from a news API and also performs web scraping to display aggregated news results.
+## Overview
+
+The **Web News Aggregator** is a Python-based application that collects, processes, and visualizes news articles from various online sources. It uses a combination of the **NewsAPI** and **web scraping** to deliver up-to-date news content in an interactive and insightful manner. Built with **Streamlit**, the app offers users a clean, simple interface to explore headlines, sentiment trends, and keyword patterns.
+
+---
 
 ## Features
 
-- Fetches news articles from various sources using a news API
-- Web scraping to gather additional news content
-- Visualizes news data with charts and word clouds
-- Sentiment analysis of news article titles
-- Interactive and user-friendly interface powered by Streamlit
+- **News Aggregation**  
+  Fetches the latest headlines and articles using the [NewsAPI](https://newsapi.org/) and web scraping techniques.
 
-## Installation
+- **Sentiment Analysis**  
+  Uses `TextBlob` and `NLTK` to analyze the polarity of news headlines.
+
+- **Data Visualization**  
+  Displays word clouds, sentiment plots, and news category distributions using `Matplotlib`, `Seaborn`, and `Plotly`.
+
+- **Interactive Dashboard**  
+  Streamlit-powered UI lets users select news categories, enter keywords, and analyze results instantly.
+
+---
+
+## Setup Instructions
+
+### Installation
 
 1. Clone the repository:
    ```

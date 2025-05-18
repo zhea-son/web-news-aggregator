@@ -13,6 +13,7 @@ def main():
     aggregator = NewsAggregator(api_key)
 
     with st.sidebar:
+        st.image("3016.png", use_column_width=True)
         st.header("Search News")
         user_input = st.text_input("Enter the category", key="category_input")
         num_articles = st.slider("Number of articles per page", min_value=1, max_value=20, value=5, step=1)
