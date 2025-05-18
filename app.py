@@ -6,8 +6,8 @@ from news_visualizer import NewsVisualizer
 
 def main():
     st.set_page_config(page_title="Information News Aggregator", layout="wide")
-    st.markdown( "<h1 style='text-align: center; color: #4B8BBE;'>Information News Aggregator</h1>", unsafe_allow_html=True )
-    st.markdown( "<p style='text-align: center; font-size: 18px;'>Welcome to your information aggregator using Web API and Scrapping</p>", unsafe_allow_html=True )
+    st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>Information News Aggregator</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 18px;'>Welcome to your information aggregator using Web API and Scrapping</p>", unsafe_allow_html=True)
 
     api_key = "64bb097053f8400da84a0ac149e0b884"
     aggregator = NewsAggregator(api_key)
@@ -34,7 +34,6 @@ def main():
 
     with tab1:
         articles = st.session_state.get("articles", [])
-
         if "page" not in st.session_state:
             st.session_state.page = 1
 
@@ -59,9 +58,9 @@ def main():
                         if len(description) > 200:
                             description = description[:200] + "..."
                         st.write(description)
-                        pretty_date = article.format_date()
+                        article_date = article.format_date()
                         st.markdown(f"**Author:** {article.author}")
-                        st.markdown(f"**Published on:** {pretty_date}")
+                        st.markdown(f"**Published on:** {article_date}")
                         st.markdown(f"**Source:** {article.source}")
                         content_preview = article.content or ""
                         if len(content_preview) > 300:
@@ -73,30 +72,34 @@ def main():
             st.info("No articles found for this topic.")
 
     with tab2:
-        st.header("Trending Publishers and Categories Visualization")
+        st.header("Trends and Insights")
         articles = st.session_state.get("articles", [])
         if not articles:
             st.info("No articles to visualize. Please fetch news first.")
         else:
-            visualizer = NewsVisualizer( aggregator.get_refined_data() )
-            cols = st.columns(4)
-            with cols[0]:
-                publishers = [article.source for article in articles]
-                publisher_counts = pd.Series(publishers).value_counts()
-                st.subheader("Top Publishers")
-                st.pyplot(visualizer.plot_by_source())
+            df = aggregator.get_refined_data(articles)
+                
+            visualizer = NewsVisualizer(df)
 
-            with cols[1]:
-                trending_categories = ["technology", "business", "sports", "entertainment", "health", "science"]
-                st.subheader("Trending Categories")
-                st.bar_chart(pd.Series(trending_categories).value_counts())
+            with st.expander("Articles by Source", expanded=False):
+                fig1 = visualizer.plot_by_source()
+                st.pyplot(fig1)
 
+            with st.expander("Articles by Authors", expanded=False):
+                fig2 = visualizer.plot_top_authors() 
+                st.pyplot(fig2) 
 
-            # visualizer = NewsVisualizer(aggregator.get_articles())
-            # visualizer.show_articles_per_source()
-            # visualizer.show_publication_timeline()
-            # visualizer.show_description_wordcount_dist()
-            # visualizer.show_title_wordcloud()
+            with st.expander("Article Length Over Time", expanded=False):
+                fig3 = visualizer.plot_article_lengths()
+                st.pyplot(fig3) 
+            
+            with st.expander("Articles by Time", expanded=False):
+                fig4 = visualizer.plot_over_time()
+                st.pyplot(fig4) 
+            
+            with st.expander("Most Used Words in Title", expanded=False):
+                fig5 = visualizer.plot_wordcloud()
+                st.pyplot(fig5) 
 
 if __name__ == "__main__":
     main()

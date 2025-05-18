@@ -11,6 +11,7 @@ class NewsAggregator(NewsSource):
         self.api_key = api_key
         self.articles = []
 
+    # Fetch the news articles from the API using api_key
     def fetch_news(self, category):
         url = f"https://newsapi.org/v2/everything?q={category}&apiKey={self.api_key}"
         try:
@@ -37,8 +38,8 @@ class NewsAggregator(NewsSource):
         except Exception:
             self.articles = []
 
+    # Remove duplicates by URL
     def _clean_articles(self):
-        # Remove duplicates by URL
         unique = {}
         for article in self.articles:
             if article.url not in unique:
@@ -48,17 +49,22 @@ class NewsAggregator(NewsSource):
     def get_articles(self):
         return self.articles
 
-    def get_refined_data(self):
-        return pd.DataFrame([{
-            'title': a.title,
-            'url': a.url,
-            'description': a.description,
-            'image_url': a.image_url,
-            'author': a.author,
-            'publishedAt': a.published_date,
-            'source': a.source
-        } for a in self.articles])
-
+    # Convert list of articles object into suitable dataframe
+    def get_refined_data(self, data):
+        rows = []
+        for a in data:
+            try:
+                row = {
+                    "title": getattr(a, "title", ""),
+                    "author": getattr(a, "author", "Unknown"),
+                    "source": {"name": getattr(a, "source", "Unknown")},
+                    "publishedAt": getattr(a, "published_date", None),
+                    "content": getattr(a, "content", "")
+                }
+                rows.append(row)
+            except Exception as e:
+                print(f"Error processing article: {e}")
+        return pd.DataFrame(rows)
 
 
 
