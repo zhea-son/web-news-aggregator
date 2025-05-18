@@ -17,7 +17,9 @@ nltk.download('stopwords')
 class NewsVisualizer:
     def __init__(self, data):
         self.data = data
-        
+
+        # Convert 'author' column to string type to handle None values properly
+        self.data['author'] = self.data['author'].astype('object').where(self.data['author'].notnull(), None)
         self.data['author'] = self.data['author'].fillna('Unknown')
         self.data['title'] = self.data['title'].fillna('')
         self.data['source'] = self.data['source'].fillna('Unknown') 
@@ -89,7 +91,13 @@ class NewsVisualizer:
         self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], utc=True)
         self.data['publishedAt'] = self.data['publishedAt'].dt.tz_localize(None)
 
-        articles_over_time = self.data.resample('D', on='publishedAt').size().reset_index(name='count')
+        # Drop rows with NaT in 'publishedAt' before resampling
+        data_filtered = self.data.dropna(subset=['publishedAt'])
+
+        # Set 'publishedAt' as index for resampling
+        data_filtered = data_filtered.set_index('publishedAt')
+
+        articles_over_time = data_filtered.resample('D').size().reset_index(name='count')
 
         plt.figure(figsize=(10, 6))
         plt.plot(articles_over_time['publishedAt'], articles_over_time['count'], marker='o')
