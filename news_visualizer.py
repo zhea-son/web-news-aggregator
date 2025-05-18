@@ -8,97 +8,57 @@ from textblob import TextBlob
 import nltk
 from nltk.corpus import stopwords
 import matplotlib.pyplot as plt
+from dateutil import parser
+import re
 
 nltk.download('punkt')
 nltk.download('stopwords')
 
 class NewsVisualizer:
-    def __init__(self, articles):
-        self.df = pd.DataFrame([{
-            'title': a.title,
-            'source': a.source,
-            'publishedAt': a.published_date,
-            'description': a.description,
-            'author': a.author
-        } for a in articles if a.title and a.source and a.published_date and a.description])
-        # self._preprocess()
-
-    # def _preprocess(self):
-    #     self.df['publishedAt'] = pd.to_datetime(self.df['publishedAt'], errors='coerce')
-    #     self.df.dropna(subset=['publishedAt'], inplace=True)
-    #     self.df['desc_word_count'] = self.df['description'].apply(lambda x: len(str(x).split()))
-    #     self.df['title_length'] = self.df['title'].apply(lambda x: len(str(x).split()))
+    def __init__(self, data):
+        self.data = data
         
-    # def __init__(self, data):
-    #     self.data = data
-    #     self.data['author'] = self.data['author'].fillna('Unknown')
-    #     self.data['title'] = self.data['title'].fillna('')
-    #     self.data['source'] = self.data['source'].fillna('Unknown')
-    #     self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], errors='coerce')
+        self.data['author'] = self.data['author'].fillna('Unknown')
+        self.data['title'] = self.data['title'].fillna('')
+        self.data['source'] = self.data['source'].fillna('Unknown') 
 
-    def plot_by_source(self):
-        # self.data['source_name'] = self.data['source'].apply(lambda x: x['name'] if isinstance(x, dict) else 'Unknown')
-        # source_counts = self.data['source_name'].value_counts().reset_index()
-        # source_counts.columns = ['Source', 'Number of Articles']
-        # plt.figure(figsize=(10, 6))
-        # sns.barplot(data=source_counts, x='Source', y='Number of Articles')
-        # plt.title('Article Distribution by Source')
-        # plt.xlabel('Source')
-        # plt.ylabel('Number of Articles')
-        # plt.xticks(rotation=45)
-        # plt.tight_layout()
-        # return plt
+        # Trim long author names
+        self.data['author'] = self.data['author'].apply(
+            lambda x: x[:20] if isinstance(x, str) and len(x) > 30 else x
+        ) 
     
-        plt.figure(figsize=(6, 4))
-        sns.countplot(y='source', data=self.df, order=self.df['source'].value_counts().head(10).index)
-        plt.title("Top Sources")
+        def clean_date(value):
+            if pd.isna(value):
+                return None
+            try:
+                # Fix '1:54 p.m. PT' style to 24hr
+                value = re.sub(r'(\d+:\d+)\s*p\.m\.', r'\1 PM', value, flags=re.IGNORECASE)
+                value = re.sub(r'(\d+:\d+)\s*a\.m\.', r'\1 AM', value, flags=re.IGNORECASE)
+
+                # Remove unsupported timezone strings like "PT"
+                value = re.sub(r'\b(P[ST]?)\b', '', value)
+
+                # Parse with dateutil (handles most edge cases)
+                return parser.parse(value)
+            except Exception:
+                return pd.NaT
+            
+        self.data['publishedAt'] = self.data['publishedAt'].apply(clean_date)
+
+        
+    def plot_by_source(self):
+        self.data['source_name'] = self.data['source'].apply(lambda x: x['name'] if isinstance(x, dict) else 'Unknown')
+        source_counts = self.data['source_name'].value_counts().reset_index()
+        source_counts.columns = ['Source', 'Number of Articles']
+        plt.figure(figsize=(10, 6))
+        sns.barplot(data=source_counts, x='Source', y='Number of Articles')
+        plt.title('Article Distribution by Source')
+        plt.xlabel('Source')
+        plt.ylabel('Number of Articles')
+        plt.xticks(rotation=90)
         plt.tight_layout()
         return plt
-
-    def plot_by_author(self):
-        author_counts = self.data['author'].value_counts().reset_index()
-        author_counts.columns = ['Author', 'Number of Articles']
-        plt.figure(figsize=(10, 6))
-        sns.barplot(data=author_counts, x='Author', y='Number of Articles')
-        plt.title('Article Distribution by Author')
-        plt.xlabel('Author')
-        plt.ylabel('Number of Articles')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
-
-    def plot_article_lengths(self):
-        self.data['article_length'] = self.data['content'].apply(lambda x: len(str(x).split()))
-        plt.figure(figsize=(10, 6))
-        plt.hist(self.data['article_length'], bins=20)
-        plt.title('Distribution of Article Lengths')
-        plt.xlabel('Length of Articles (in words)')
-        plt.ylabel('Frequency')
-        plt.tight_layout()
-        plt.show()
-
-
-    def plot_over_time(self):
-        articles_over_time = self.data.resample('D', on='publishedAt').size().reset_index(name='count')
-        plt.figure(figsize=(10, 6))
-        plt.plot(articles_over_time['publishedAt'], articles_over_time['count'], marker='o')
-        plt.title('Number of Articles Published Over Time')
-        plt.xlabel('Date')
-        plt.ylabel('Number of Articles')
-        plt.tight_layout()
-        plt.show()
-
     
-    def plot_wordcloud(self):
-        stopwords_set = set(stopwords.words('english'))
-        all_titles = ' '.join(self.data['title'].dropna())
-        wordcloud = WordCloud(stopwords=stopwords_set, background_color='white', width=800, height=400).generate(all_titles)
-        plt.figure(figsize=(10, 5))
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        plt.title('Word Cloud of Article Titles')
-        plt.show()
-
     def plot_top_authors(self):
         top_authors = self.data['author'].value_counts().head(10).reset_index()
         top_authors.columns = ['Author', 'Number of Articles']
@@ -108,10 +68,46 @@ class NewsVisualizer:
         plt.xlabel('Number of Articles')
         plt.ylabel('Author')
         plt.tight_layout()
-        plt.show()
+        return plt
 
+    def plot_article_lengths(self):
+        self.data['article_length'] = self.data['content'].apply(lambda x: len(str(x).split()))
+        plt.figure(figsize=(10, 6))
+        plt.hist(self.data['article_length'], bins=20)
+        plt.title('Distribution of Article Lengths')
+        plt.xlabel('Length of Articles (in words)')
+        plt.ylabel('Frequency') 
+        plt.tight_layout()
+        return plt
+
+
+    def plot_over_time(self):
+        self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], utc=True)
+        self.data['publishedAt'] = self.data['publishedAt'].dt.tz_localize(None)
+
+        articles_over_time = self.data.resample('D', on='publishedAt').size().reset_index(name='count')
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(articles_over_time['publishedAt'], articles_over_time['count'], marker='o')
+        plt.title('Number of Articles Published Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Articles')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        return plt
+    
+    def plot_wordcloud(self):
+        stopwords_set = set(stopwords.words('english'))
+        all_titles = ' '.join(self.data['title'].dropna())
+        wordcloud = WordCloud(stopwords=stopwords_set, background_color='white', width=800, height=400).generate(all_titles)
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        plt.title('Word Cloud of Article Titles')
+        return plt
 
     def plot_publication_times(self):
+        self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], errors='coerce')
         self.data['hour'] = self.data['publishedAt'].dt.hour
         self.data = self.data.dropna(subset=['hour'])
         plt.figure(figsize=(10, 6))
@@ -120,7 +116,7 @@ class NewsVisualizer:
         plt.xlabel('Hour of the Day')
         plt.ylabel('Frequency')
         plt.tight_layout()
-        plt.show()
+        return plt
 
 
     def plot_sentiments(self):
@@ -131,7 +127,7 @@ class NewsVisualizer:
         plt.xlabel('Sentiment Polarity')
         plt.ylabel('Frequency')
         plt.tight_layout()
-        plt.show()
+        return plt
 
 
     def plot_keywords(self):
@@ -147,19 +143,7 @@ class NewsVisualizer:
         plt.xlabel('Frequency')
         plt.ylabel('Keyword')
         plt.tight_layout()
-        plt.show()
-
-
-    def plot_article_length_over_time(self):
-        self.data['article_length'] = self.data['content'].apply(lambda x: len(str(x).split()))
-        plt.figure(figsize=(10, 6))
-        plt.scatter(self.data['publishedAt'], self.data['article_length'], alpha=0.5)
-        plt.title('Article Lengths Over Time')
-        plt.xlabel('Date')
-        plt.ylabel('Length of Articles (in words)')
-        plt.tight_layout()
-        plt.show()
-
+        return plt
 
     def plot_sentiment_distribution(self):
         sentiment_counts = self.data['title_sentiment'].apply(lambda x: 'Positive' if x > 0 else ('Negative' if x < 0 else 'Neutral')).value_counts()
@@ -169,7 +153,7 @@ class NewsVisualizer:
         plt.xlabel('Sentiment')
         plt.ylabel('Number of Articles')
         plt.tight_layout()
-        plt.show()
+        return plt
 
 
     def analyze_content(self):
@@ -187,4 +171,4 @@ class NewsVisualizer:
         fig = px.bar(word_freq_df, x='Frequency', y='Word', orientation='h', title='Top 20 Words in Article Content',
                      color='Frequency', color_continuous_scale='Plasma')
         fig.update_layout(yaxis={'categoryorder':'total ascending'})
-        fig.show()       
+        return fig    
