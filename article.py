@@ -14,6 +14,7 @@ class Article:
         self.source = source or "Unknown source"
         self.content = content or ""
 
+    # Web scraping to extract from articles
     def scrape_details(self):
         try:
             res = requests.get(self.url, timeout=5)
@@ -27,6 +28,7 @@ class Article:
             # Keep existing values if scraping fails
             pass
 
+    # Extract author extra information from article
     def _extract_author(self, soup):
         author_meta_names = ['author', 'article:author', 'byline']
         for name in author_meta_names:
@@ -48,6 +50,7 @@ class Article:
                 return author_tag.get_text(strip=True)
         return None
 
+    # Extract publication extra information from article
     def _extract_pub_date(self, soup):
         pub_date_meta_props = ['article:published_time', 'datePublished', 'pubdate', 'timestamp']
         for prop in pub_date_meta_props:
@@ -64,6 +67,7 @@ class Article:
             return time_tag.get_text(strip=True)
         return None
 
+    # Extract source extra information from article
     def _extract_source(self, soup):
         source_meta = soup.find('meta', attrs={'property':'og:site_name'})
         if source_meta and source_meta.get('content'):
@@ -74,6 +78,7 @@ class Article:
             hostname = hostname[4:]
         return hostname
 
+    # Extract content extra information from article
     def _extract_content(self, soup):
         paragraphs = soup.find_all('p')
         if paragraphs:

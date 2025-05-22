@@ -42,6 +42,7 @@ class NewsVisualizer:
 
                 # Parse with dateutil (handles most edge cases)
                 dt = parser.parse(value)
+
                 # Check if date is within pandas Timestamp bounds
                 if dt < pd.Timestamp.min.to_pydatetime() or dt > pd.Timestamp.max.to_pydatetime():
                     return pd.NaT
@@ -51,7 +52,7 @@ class NewsVisualizer:
             
         self.data['publishedAt'] = self.data['publishedAt'].apply(clean_date)
 
-        
+    # Plot articles from top source
     def plot_by_source(self):
         self.data['source_name'] = self.data['source'].apply(lambda x: x['name'] if isinstance(x, dict) else 'Unknown')
         source_counts = self.data['source_name'].value_counts().reset_index()
@@ -65,6 +66,7 @@ class NewsVisualizer:
         plt.tight_layout()
         return plt
     
+    # Plot articles from top author
     def plot_top_authors(self):
         top_authors = self.data['author'].value_counts().head(10).reset_index()
         top_authors.columns = ['Author', 'Number of Articles']
@@ -76,6 +78,7 @@ class NewsVisualizer:
         plt.tight_layout()
         return plt
 
+    # Plot articles from article lengths
     def plot_article_lengths(self):
         self.data['article_length'] = self.data['content'].apply(lambda x: len(str(x).split()))
         plt.figure(figsize=(10, 6))
@@ -86,7 +89,7 @@ class NewsVisualizer:
         plt.tight_layout()
         return plt
 
-
+    # Plot articles publication over time
     def plot_over_time(self):
         self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], utc=True)
         self.data['publishedAt'] = self.data['publishedAt'].dt.tz_localize(None)
@@ -108,6 +111,7 @@ class NewsVisualizer:
         plt.tight_layout()
         return plt
     
+    # Plot top words used in titles
     def plot_wordcloud(self):
         stopwords_set = set(stopwords.words('english'))
         all_titles = ' '.join(self.data['title'].dropna())
@@ -117,7 +121,8 @@ class NewsVisualizer:
         plt.axis('off')
         plt.title('Word Cloud of Article Titles')
         return plt
-
+    
+    # Plot articles times
     def plot_publication_times(self):
         self.data['publishedAt'] = pd.to_datetime(self.data['publishedAt'], errors='coerce')
         self.data['hour'] = self.data['publishedAt'].dt.hour
@@ -129,58 +134,3 @@ class NewsVisualizer:
         plt.ylabel('Frequency')
         plt.tight_layout()
         return plt
-
-
-    def plot_sentiments(self):
-        self.data['title_sentiment'] = self.data['title'].apply(lambda x: TextBlob(str(x)).sentiment.polarity if isinstance(x, str) else 0)
-        plt.figure(figsize=(10, 6))
-        sns.histplot(data=self.data, x='title_sentiment', bins=20, kde=True)
-        plt.title('Sentiment Analysis of Article Titles')
-        plt.xlabel('Sentiment Polarity')
-        plt.ylabel('Frequency')
-        plt.tight_layout()
-        return plt
-
-
-    def plot_keywords(self):
-        all_titles = ' '.join(self.data['title'].dropna())
-        word_tokens = nltk.word_tokenize(all_titles)
-        keywords = [word for word in word_tokens if word.isalpha() and word not in stopwords.words('english')]
-        keywords_freq = nltk.FreqDist(keywords)
-        top_keywords = keywords_freq.most_common(20)
-        keywords_df = pd.DataFrame(top_keywords, columns=['Keyword', 'Frequency'])
-        plt.figure(figsize=(10, 6))
-        sns.barplot(data=keywords_df, x='Frequency', y='Keyword')
-        plt.title('Top 20 Keywords in Article Titles')
-        plt.xlabel('Frequency')
-        plt.ylabel('Keyword')
-        plt.tight_layout()
-        return plt
-
-    def plot_sentiment_distribution(self):
-        sentiment_counts = self.data['title_sentiment'].apply(lambda x: 'Positive' if x > 0 else ('Negative' if x < 0 else 'Neutral')).value_counts()
-        plt.figure(figsize=(10, 6))
-        sentiment_counts.plot(kind='bar')
-        plt.title('Distribution of Sentiment Polarity')
-        plt.xlabel('Sentiment')
-        plt.ylabel('Number of Articles')
-        plt.tight_layout()
-        return plt
-
-
-    def analyze_content(self):
-        # Tokenize and preprocess content
-        all_content = ' '.join(self.data['content'].dropna())
-        tokens = nltk.word_tokenize(all_content)
-        words = [word.lower() for word in tokens if word.isalpha() and word.lower() not in stopwords.words('english')]
-
-        # Perform content analysis (e.g., word frequency)
-        word_freq = Counter(words)
-        top_words = word_freq.most_common(20)
-
-        # Visualize results
-        word_freq_df = pd.DataFrame(top_words, columns=['Word', 'Frequency'])
-        fig = px.bar(word_freq_df, x='Frequency', y='Word', orientation='h', title='Top 20 Words in Article Content',
-                     color='Frequency', color_continuous_scale='Plasma')
-        fig.update_layout(yaxis={'categoryorder':'total ascending'})
-        return fig    
