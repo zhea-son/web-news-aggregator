@@ -62,28 +62,3 @@ def test_plot_wordcloud(sample_data):
     visualizer = NewsVisualizer(sample_data)
     plot = visualizer.plot_wordcloud()
     assert plot is not None
-
-# def test_plot_publication_times(sample_data):
-#     visualizer = NewsVisualizer(sample_data)
-#     plot = visualizer.plot_publication_times()
-#     assert plot is not None
-
-# def test_plot_sentiments(sample_data):
-#     visualizer = NewsVisualizer(sample_data)
-#     plot = visualizer.plot_sentiments()
-#     assert plot is not None
-
-# def test_plot_keywords(sample_data):
-#     visualizer = NewsVisualizer(sample_data)
-#     plot = visualizer.plot_keywords()
-#     assert plot is not None
-
-# def test_plot_sentiment_distribution(sample_data):
-#     visualizer = NewsVisualizer(sample_data)
-#     plot = visualizer.plot_sentiment_distribution()
-#     assert plot is not None
-
-# def test_analyze_content(sample_data):
-#     visualizer = NewsVisualizer(sample_data)
-#     fig = visualizer.analyze_content()
-#     assert fig is not None
